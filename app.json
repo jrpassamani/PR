@@ -7,13 +7,7 @@
     "orientation": "portrait",
     "scheme": "pioneirohoras",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B3D2E"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -51,8 +45,21 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "1.9.25"
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
           }
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B3D2E"
         }
       ]
     ],

@@ -9,7 +9,10 @@
  * Restore é validado (backupValidation) e transacional; arquivos temporários
  * em cache são removidos após uso (Fase 9).
  */
-import * as FileSystem from 'expo-file-system';
+// SDK 54+ tornou a nova File API o padrão; a API clássica (cacheDirectory,
+// read/writeAsStringAsync, deleteAsync) permanece em /legacy. Mantemos a
+// clássica para não reescrever a E/S de backup já validada.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Crypto from 'expo-crypto';

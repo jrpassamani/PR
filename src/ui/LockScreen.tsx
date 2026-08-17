@@ -24,9 +24,13 @@ export function LockScreen() {
 
   useEffect(() => {
     if (!lockedUntil) return;
-    const id = setInterval(() => setNowTs(Date.now()), 500);
-    setNowTs(Date.now());
-    return () => clearInterval(id);
+    const tick = () => setNowTs(Date.now());
+    const immediate = setTimeout(tick, 0); // sincroniza já, mas de forma assíncrona
+    const id = setInterval(tick, 500);
+    return () => {
+      clearTimeout(immediate);
+      clearInterval(id);
+    };
   }, [lockedUntil]);
 
   const remainingMs = lockedUntil ? Math.max(0, lockedUntil - nowTs) : 0;
