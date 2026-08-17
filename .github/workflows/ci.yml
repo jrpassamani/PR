@@ -5,12 +5,18 @@ on:
     branches: [main]
   pull_request:
 
+# Menor privilégio para o GITHUB_TOKEN (Fase 14).
+permissions:
+  contents: read
+
 jobs:
   quality:
-    name: Typecheck + Testes
+    name: Qualidade + Segurança
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # necessário p/ o gitleaks varrer o histórico
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -24,5 +30,29 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Testes do motor de cálculo
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes (motor + segurança)
         run: npm test
+
+      # Auditoria de dependências de PRODUÇÃO (as que embarcam no app).
+      # Não bloqueia por CVEs em ferramentas de build (não shippadas); apenas reporta.
+      - name: Security audit (produção)
+        run: npm audit --omit=dev --audit-level=high || true
+
+      # Expo Doctor: coerência de versões/config (informativo).
+      - name: Expo Doctor
+        run: npx --yes expo-doctor || true
+
+  secret-scan:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,7 +2,7 @@
  * CONFIGURAÇÕES — meta, tema, histórico multi-ano, segurança e backup.
  */
 import React, { useState } from 'react';
-import { Alert, Switch, TextInput, View } from 'react-native';
+import { Alert, Modal, Switch, TextInput, View } from 'react-native';
 import { AppText, Button, Card, Divider, Row, Screen } from '@/ui/components/base';
 import { Chip } from '@/ui/components/indicators';
 import { useTheme } from '@/ui/theme';
@@ -12,8 +12,11 @@ import { useActivityStore } from '@/state/useActivityStore';
 import { useLockStore } from '@/state/useLockStore';
 import { setPin as savePin } from '@/security/pin';
 import { isBiometricAvailable } from '@/security/biometrics';
-import { exportActivitiesCsv, exportBackupJson, importBackupJson } from '@/data/backup';
+import { exportActivitiesCsv, exportEncryptedBackup, importEncryptedBackup } from '@/data/backup';
+import { visibleServiceYears } from '@/domain/serviceYears';
 import { formatIsoBr } from '@/utils/format';
+
+const MIN_BACKUP_PASSWORD = 6;
 
 const THEME_OPTIONS: { key: ThemePref; label: string }[] = [
   { key: 'system', label: 'Sistema' },
@@ -42,6 +45,13 @@ export default function Config() {
   const [pin, setPin] = useState('');
   const [pin2, setPin2] = useState('');
   const [showPin, setShowPin] = useState(false);
+
+  // Fluxo de senha do backup (independente do PIN).
+  const [backupMode, setBackupMode] = useState<'export' | 'import' | null>(null);
+  const [backupPwd, setBackupPwd] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const shownYears = visibleServiceYears(years, s.keepHistory);
 
   const input = {
     backgroundColor: t.colors.card,
@@ -80,24 +90,52 @@ export default function Config() {
     Alert.alert('PIN', 'PIN atualizado.');
   };
 
-  const doImport = async () => {
+  const openBackup = (mode: 'export' | 'import') => {
+    setBackupPwd('');
+    setBackupMode(mode);
+  };
+
+  const confirmBackup = async () => {
+    if (backupPwd.length < MIN_BACKUP_PASSWORD) {
+      return Alert.alert('Senha', `A senha do backup deve ter ao menos ${MIN_BACKUP_PASSWORD} caracteres.`);
+    }
+    const mode = backupMode;
+    const pwd = backupPwd;
+    setBusy(true);
     try {
-      const res = await importBackupJson();
-      if (!res) return;
-      await useServiceYearStore.getState().load();
-      let act = useServiceYearStore.getState().active;
-      // Backups importados chegam inativos; se nenhum ficou ativo, ativa o mais recente.
-      if (!act) {
-        const all = useServiceYearStore.getState().all;
-        if (all.length > 0) {
-          await useServiceYearStore.getState().setActive(all[0].id);
-          act = useServiceYearStore.getState().active;
+      if (mode === 'export') {
+        await exportEncryptedBackup(pwd);
+        setBackupMode(null);
+        setBackupPwd('');
+      } else {
+        const res = await importEncryptedBackup(pwd);
+        setBackupMode(null);
+        setBackupPwd('');
+        if (!res) return; // usuário cancelou o seletor
+        await useServiceYearStore.getState().load();
+        let act = useServiceYearStore.getState().active;
+        // Backups importados chegam inativos; se nenhum ficou ativo, ativa o mais recente.
+        if (!act) {
+          const all = useServiceYearStore.getState().all;
+          if (all.length > 0) {
+            await useServiceYearStore.getState().setActive(all[0].id);
+            act = useServiceYearStore.getState().active;
+          }
         }
+        if (act) await useActivityStore.getState().load(act.id);
+        const y = res.years;
+        const a = res.activities;
+        Alert.alert(
+          'Importação concluída',
+          `Anos: ${y.inserted} novo(s), ${y.ignored} já existente(s), ${y.rejected} rejeitado(s).\n` +
+            `Atividades: ${a.inserted} nova(s), ${a.ignored} já existente(s), ${a.rejected} rejeitada(s).`,
+        );
       }
-      if (act) await useActivityStore.getState().load(act.id);
-      Alert.alert('Importado', `${res.years} ano(s) e ${res.activities} atividade(s).`);
     } catch (e) {
-      Alert.alert('Erro', 'Arquivo inválido ou não foi possível importar.');
+      const msg = e instanceof Error ? e.message : 'Falha na operação de backup.';
+      Alert.alert('Erro', msg);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -139,15 +177,15 @@ export default function Config() {
         <Row style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
             <AppText>Manter anos anteriores</AppText>
-            <AppText variant="muted">Arquiva e permite consultar anos passados.</AppText>
+            <AppText variant="muted">Mostra e permite consultar/reativar anos passados. Desligado, só o ano atual aparece (os dados não são apagados).</AppText>
           </View>
           <Switch value={s.keepHistory} onValueChange={s.setKeepHistory} />
         </Row>
-        {years.length > 1 ? (
+        {shownYears.length > 1 ? (
           <>
             <Divider />
             <AppText variant="label">Trocar ano ativo</AppText>
-            {years.map((y) => (
+            {shownYears.map((y) => (
               <Row key={y.id} style={{ justifyContent: 'space-between' }}>
                 <AppText>{formatIsoBr(y.startDate)} – {formatIsoBr(y.endDate)}</AppText>
                 {y.isActive ? (
@@ -202,11 +240,50 @@ export default function Config() {
       {/* Backup */}
       <Card>
         <AppText variant="heading">Backup</AppText>
-        <AppText variant="muted">O arquivo exportado não é criptografado. Guarde em local seguro.</AppText>
-        <Button title="Exportar backup (JSON)" onPress={() => exportBackupJson().catch(() => Alert.alert('Erro', 'Falha ao exportar.'))} variant="secondary" />
+        <AppText variant="muted">O backup JSON é criptografado com uma senha própria (não é o seu PIN). Guarde a senha: sem ela o backup não pode ser restaurado.</AppText>
+        <Button title="Exportar backup (cifrado)" onPress={() => openBackup('export')} variant="secondary" />
+        <Button title="Importar backup (cifrado)" onPress={() => openBackup('import')} variant="ghost" />
+        <Divider />
+        <AppText variant="muted">O CSV é texto simples (para planilha).</AppText>
         <Button title="Exportar atividades (CSV)" onPress={() => exportActivitiesCsv().catch(() => Alert.alert('Erro', 'Falha ao exportar.'))} variant="ghost" />
-        <Button title="Importar backup (JSON)" onPress={doImport} variant="ghost" />
       </Card>
+
+      {/* Modal de senha do backup */}
+      <Modal visible={backupMode !== null} transparent animationType="fade" onRequestClose={() => !busy && setBackupMode(null)}>
+        <View style={{ flex: 1, backgroundColor: '#0009', alignItems: 'center', justifyContent: 'center', padding: t.spacing.xl }}>
+          <Card style={{ width: '100%', maxWidth: 420, gap: t.spacing.md }}>
+            <AppText variant="heading">
+              {backupMode === 'export' ? 'Senha do novo backup' : 'Senha do backup'}
+            </AppText>
+            <AppText variant="muted">
+              {backupMode === 'export'
+                ? 'Escolha uma senha forte para cifrar o arquivo. Você precisará dela para restaurar.'
+                : 'Digite a senha usada quando este backup foi criado.'}
+            </AppText>
+            <TextInput
+              style={input}
+              secureTextEntry
+              autoFocus
+              placeholder={`Senha (mín. ${MIN_BACKUP_PASSWORD})`}
+              placeholderTextColor={t.colors.textMuted}
+              value={backupPwd}
+              onChangeText={setBackupPwd}
+              editable={!busy}
+            />
+            <Row style={{ justifyContent: 'flex-end' }}>
+              <Button title="Cancelar" variant="ghost" disabled={busy} onPress={() => { setBackupMode(null); setBackupPwd(''); }} />
+              <View style={{ width: t.spacing.md }} />
+              <Button
+                title={busy ? 'Processando…' : backupMode === 'export' ? 'Exportar' : 'Importar'}
+                variant="secondary"
+                disabled={busy}
+                loading={busy}
+                onPress={confirmBackup}
+              />
+            </Row>
+          </Card>
+        </View>
+      </Modal>
 
       <Card>
         <AppText variant="heading">Sobre</AppText>

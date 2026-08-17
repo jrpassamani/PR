@@ -7,6 +7,7 @@ import { ActivityIndicator, AppState, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as ScreenCapture from 'expo-screen-capture';
 
 import { getRepositories } from '@/data';
 import { useSettingsStore } from '@/state/useSettingsStore';
@@ -34,7 +35,10 @@ function useBootstrap(): boolean {
         if (active) await useActivityStore.getState().load(active.id);
         const pin = await checkHasPin();
         setHasPin(pin);
-        if (pin) useLockStore.getState().lock(); // inicia bloqueado
+        if (pin) {
+          await useLockStore.getState().hydrateLockout(); // restaura lockout persistido
+          useLockStore.getState().lock(); // inicia bloqueado
+        }
       } finally {
         if (mounted) setReady(true);
       }
@@ -61,6 +65,25 @@ function useAuthRedirect(ready: boolean) {
   }, [ready, onboarded, segments, router]);
 }
 
+/**
+ * Proteção de conteúdo sensível (Fase 5, SEC-06): quando o usuário adota PIN,
+ * ativa FLAG_SECURE (Android) via expo-screen-capture — bloqueia screenshots e
+ * oculta o preview do app na tela de "recentes". Não afeta export/compartilhar.
+ */
+function useScreenCaptureGuard(hasPin: boolean) {
+  useEffect(() => {
+    const tag = 'pioneiro-sensitive';
+    if (hasPin) {
+      ScreenCapture.preventScreenCaptureAsync(tag).catch(() => {});
+    } else {
+      ScreenCapture.allowScreenCaptureAsync(tag).catch(() => {});
+    }
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync(tag).catch(() => {});
+    };
+  }, [hasPin]);
+}
+
 function useAutoLock() {
   const lockTimeoutSec = useSettingsStore((s) => s.lockTimeoutSec);
   useEffect(() => {
@@ -83,6 +106,7 @@ export default function RootLayout() {
 
   const locked = useLockStore((s) => s.locked);
   const hasPin = useLockStore((s) => s.hasPin);
+  useScreenCaptureGuard(hasPin);
 
   return (
     <SafeAreaProvider>

@@ -13,7 +13,8 @@ const DB_NAME = 'pioneiro.db';
 
 /** Interface mínima usada por toda a camada de dados. */
 export interface Database {
-  run(sql: string, params?: unknown[]): void;
+  /** Executa e retorna quantas linhas foram afetadas (p/ INSERT OR IGNORE etc). */
+  run(sql: string, params?: unknown[]): number;
   all<T = Record<string, unknown>>(sql: string, params?: unknown[]): T[];
   get<T = Record<string, unknown>>(sql: string, params?: unknown[]): T | null;
   transaction(fn: () => void): void;
@@ -23,7 +24,7 @@ function wrap(op: OpDB): Database {
   const exec = (sql: string, params: unknown[] = []) => op.executeSync(sql, params as Scalar[]);
   return {
     run(sql, params = []) {
-      exec(sql, params);
+      return exec(sql, params).rowsAffected ?? 0;
     },
     all<T>(sql: string, params: unknown[] = []) {
       return (exec(sql, params).rows ?? []) as T[];

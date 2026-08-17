@@ -1,12 +1,17 @@
 /**
  * Estado do bloqueio do app (PIN/biometria) e auto-lock por inatividade.
+ *
+ * As tentativas erradas e o tempo de bloqueio são PERSISTIDOS no SecureStore
+ * (ver security/lockout.ts) e re-hidratados no boot, para o lockout progressivo
+ * resistir a force-close (P1-04).
  */
 import { create } from 'zustand';
-
-/** A partir desta quantidade de erros, começa o lockout progressivo. */
-const FAILURE_THRESHOLD = 5;
-const BASE_LOCKOUT_MS = 30_000; // 30s
-const MAX_LOCKOUT_MS = 5 * 60_000; // 5min
+import {
+  loadLockout,
+  saveLockout,
+  clearLockout,
+  nextLockoutUntil,
+} from '@/security/lockout';
 
 interface LockState {
   hasPin: boolean; // há PIN configurado?
@@ -20,8 +25,10 @@ interface LockState {
   markBackground: () => void;
   /** Ao voltar do background: bloqueia se passou do timeout. */
   resumeFromBackground: (timeoutSec: number) => void;
-  /** Registra um PIN incorreto e aplica lockout progressivo. */
+  /** Registra um PIN incorreto e aplica lockout progressivo (persistido). */
   registerFailure: () => void;
+  /** Lê o lockout persistido no SecureStore e aplica ao estado (no boot). */
+  hydrateLockout: () => Promise<void>;
 }
 
 export const useLockStore = create<LockState>((set, get) => ({
@@ -32,7 +39,12 @@ export const useLockStore = create<LockState>((set, get) => ({
   lockedUntil: null,
 
   setHasPin: (v) => set({ hasPin: v, locked: v ? get().locked : false }),
-  unlock: () => set({ locked: false, backgroundAt: null, failedAttempts: 0, lockedUntil: null }),
+
+  unlock: () => {
+    set({ locked: false, backgroundAt: null, failedAttempts: 0, lockedUntil: null });
+    void clearLockout();
+  },
+
   lock: () => set({ locked: true }),
   markBackground: () => set({ backgroundAt: Date.now() }),
 
@@ -47,12 +59,13 @@ export const useLockStore = create<LockState>((set, get) => ({
 
   registerFailure: () => {
     const attempts = get().failedAttempts + 1;
-    if (attempts < FAILURE_THRESHOLD) {
-      set({ failedAttempts: attempts });
-      return;
-    }
-    const over = attempts - FAILURE_THRESHOLD; // 0, 1, 2...
-    const wait = Math.min(BASE_LOCKOUT_MS * 2 ** over, MAX_LOCKOUT_MS);
-    set({ failedAttempts: attempts, lockedUntil: Date.now() + wait });
+    const lockedUntil = nextLockoutUntil(attempts, Date.now());
+    set({ failedAttempts: attempts, lockedUntil });
+    void saveLockout({ failedAttempts: attempts, lockedUntil });
+  },
+
+  async hydrateLockout() {
+    const { failedAttempts, lockedUntil } = await loadLockout();
+    set({ failedAttempts, lockedUntil });
   },
 }));
