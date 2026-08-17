@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade — Horas do Pioneiro</title>
+<style>
+  :root {
+    --paper: #f6f7f4; --card: #ffffff; --ink: #14201a; --ink-soft: #46564d;
+    --line: #e2e7e0; --pine: #0b3d2e; --pine-bright: #17795a; --pine-tint: #e7f0ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0e1512; --card: #151e19; --ink: #e8efe9; --ink-soft: #a9b8af;
+      --line: #253029; --pine: #7fd9b6; --pine-bright: #8fe3c2; --pine-tint: #16261f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 22px 80px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--pine-bright); font-weight: 700; margin: 0 0 12px; }
+  h1 { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-weight: 600; font-size: clamp(28px, 5vw, 38px); line-height: 1.1; margin: 0 0 8px; letter-spacing: -.01em; }
+  .sub { color: var(--ink-soft); font-size: 14px; margin: 0 0 28px; }
+  .summary { background: var(--pine-tint); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 0 0 32px; }
+  .summary p { margin: 0; color: var(--ink); }
+  h2 { font-size: 19px; margin: 34px 0 8px; letter-spacing: -.01em; }
+  p, li { color: var(--ink-soft); }
+  p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 4px 0; }
+  strong { color: var(--ink); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; background: var(--pine-tint); color: var(--pine-bright); padding: 1px 6px; border-radius: 5px; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 36px 0 20px; }
+  footer { font-size: 13px; color: var(--ink-soft); }
+  a { color: var(--pine-bright); }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Horas do Pioneiro</p>
+  <h1>Política de Privacidade</h1>
+  <p class="sub">Vigência: 17 de agosto de 2026 · Aplicativo <code>com.pioneirohoras.app</code></p>
+
+  <div class="summary">
+    <p>O <strong>Horas do Pioneiro</strong> é um aplicativo <strong>100% local e offline</strong>. Ele <strong>não coleta, não transmite e não compartilha</strong> nenhum dado pessoal. Tudo o que você registra fica <strong>apenas no seu aparelho</strong>, de forma <strong>criptografada</strong>. Não há servidores, contas, login, nuvem, anúncios, rastreadores ou analytics.</p>
+  </div>
+
+  <h2>Que informações o app trata</h2>
+  <p>O app armazena, <strong>somente no seu dispositivo</strong>, os dados que você mesmo digita para controlar suas horas de serviço:</p>
+  <ul>
+    <li>atividades (data, categoria, duração e observações);</li>
+    <li>configurações do Ano de Serviço (meta, referência mensal, datas);</li>
+    <li>preferências do app (tema, bloqueio automático).</li>
+  </ul>
+  <p>Esses dados <strong>nunca saem do aparelho</strong> por iniciativa do aplicativo.</p>
+
+  <h2>O que NÃO fazemos</h2>
+  <ul>
+    <li><strong>Não coletamos</strong> dados pessoais.</li>
+    <li><strong>Não enviamos</strong> dados para servidores nossos ou de terceiros.</li>
+    <li><strong>Não compartilhamos</strong> nem vendemos dados.</li>
+    <li><strong>Não usamos</strong> analytics, telemetria, publicidade ou rastreadores.</li>
+    <li><strong>Não solicitamos</strong> internet para funcionar, nem câmera, localização, contatos ou armazenamento amplo.</li>
+  </ul>
+
+  <h2>Segurança dos seus dados</h2>
+  <ul>
+    <li>O banco de dados local é <strong>criptografado com SQLCipher (AES-256)</strong>.</li>
+    <li>A chave de criptografia é gerada no aparelho e guardada no <strong>armazenamento seguro do sistema</strong> (Keystore/Keychain); nunca sai do dispositivo e nunca é registrada.</li>
+    <li>O acesso ao app pode ser protegido por <strong>PIN</strong> (guardado apenas como hash com sal) e por <strong>biometria</strong>.</li>
+  </ul>
+
+  <h2>Permissões</h2>
+  <p>O app declara apenas as permissões de <strong>biometria</strong> (<code>USE_BIOMETRIC</code> / <code>USE_FINGERPRINT</code>), usadas <strong>exclusivamente</strong> para desbloquear o aplicativo. A biometria é processada pelo próprio sistema operacional; o app <strong>não tem acesso</strong> à sua impressão digital ou rosto.</p>
+
+  <h2>Backups exportados por você</h2>
+  <p>Se você <strong>optar</strong> por exportar um backup, o arquivo é <strong>criptografado com uma senha que você define</strong> (independente do seu PIN), apenas para você guardá-lo/compartilhá-lo onde quiser. <strong>Você</strong> controla totalmente esse arquivo e sua senha; o app não os armazena nem os envia a lugar nenhum. Guarde a senha em local seguro — sem ela, o backup não pode ser restaurado.</p>
+
+  <h2>Crianças</h2>
+  <p>O app não é direcionado a crianças e não coleta dados de ninguém.</p>
+
+  <h2>Serviços de terceiros</h2>
+  <p>O aplicativo <strong>não integra</strong> serviços de terceiros que coletem dados (sem analytics, sem SDKs de anúncios, sem redes sociais).</p>
+
+  <h2>Alterações nesta política</h2>
+  <p>Podemos atualizar esta política para refletir melhorias no aplicativo. A data de vigência acima indica a última atualização. Mudanças relevantes serão comunicadas na página do app na loja.</p>
+
+  <h2>Contato</h2>
+  <p>Dúvidas sobre esta política ou sobre privacidade no aplicativo:<br>
+  <strong>Responsável:</strong> Junior Passamani<br>
+  <strong>E-mail:</strong> <a href="mailto:jrpassamani@outlook.com">jrpassamani@outlook.com</a><br>
+  <strong>Telefone:</strong> (27) 99906-0494</p>
+
+  <hr>
+  <footer>Esta política reflete o funcionamento do app na versão 1.0.0: local-first, offline, sem coleta de dados.</footer>
+</main>
+</body>
+</html>
