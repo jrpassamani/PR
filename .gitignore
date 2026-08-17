@@ -24,7 +24,21 @@ yarn-error.*
 .DS_Store
 
 # Env / secrets
+.env
+.env.*
+!.env.example
 .env*.local
+
+# Build logs / artefatos locais (não versionar — Fase 14)
+build.log
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Backups exportados (podem conter dados pessoais)
+horas-pioneiro-*.json
+horas-pioneiro-*.csv
 
 # IDE
 .idea/
